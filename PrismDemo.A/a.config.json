@@ -1,0 +1,7 @@
+{
+  "A": {
+    "SampleUpper": 80.0,
+    "SampleLower": 20.0,
+    "RefreshSeconds": 2
+  }
+}

@@ -1,16 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <AssemblyName>PrismDemo.B</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Prism.Wpf" Version="8.1.97" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="ViewModels\" />
-    <Folder Include="Views\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\PrismDemo.Core\PrismDemo.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="b.config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Target Name="CopyToModules" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)PrismDemo.B.dll" DestinationFolder="$(MSBuildProjectDirectory)\..\PrismDemo.APP\bin\$(Configuration)\$(TargetFramework)\modules\" />
+    <Copy SourceFiles="$(OutputPath)b.config.json" DestinationFolder="$(MSBuildProjectDirectory)\..\PrismDemo.APP\bin\$(Configuration)\$(TargetFramework)\modules\" />
+  </Target>
 </Project>
