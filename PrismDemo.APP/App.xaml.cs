@@ -45,11 +45,13 @@ namespace PrismDemo.APP
             Write("[App] 核心配置已加载");
 
             containerRegistry.RegisterForNavigation<HomePage>();
+            containerRegistry.RegisterForNavigation<Setting>();
             Write("[App] 导航页面注册完成");
 
             containerRegistry.RegisterSingleton<DynamicModuleManager>();
             containerRegistry.RegisterSingleton<IModuleSwitch, ModuleSwitch>();
             containerRegistry.RegisterSingleton<IModuleDeploymentService, ModuleDeploymentService>();
+            containerRegistry.RegisterSingleton<AppReloadService>();
             Write("[App] 动态模块基础设施注册完成");
 
             containerRegistry.RegisterSingleton<SharedDataModel>();

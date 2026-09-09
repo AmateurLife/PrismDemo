@@ -9,7 +9,7 @@ namespace PrismDemo.B.Configuration
 {
     /// <summary>
     /// 模块级配置（框架演示版，无业务含义）。
-    /// 查找顺序：模块 DLL 所在目录 → BaseDirectory\modules。
+    /// 查找顺序：模块 DLL 所在目录 → BaseDirectory\modules → BaseDirectory\..\Modules（仓储）。
     /// </summary>
     public static class Config
     {
@@ -29,7 +29,7 @@ namespace PrismDemo.B.Configuration
                 var configFile = Path.Combine(configDir ?? "", "b.config.json");
 
                 if (!File.Exists(configFile))
-                    configDir = AppDomain.CurrentDomain.BaseDirectory;
+                    configDir = FindConfigFallbackDirectory();
 
                 var section = ConfigLoader.LoadSection(configDir, "b.config.json", "B");
 
@@ -42,6 +42,21 @@ namespace PrismDemo.B.Configuration
             {
                 Debug.WriteLine($"[B.Config] 加载失败（使用默认值）: {ex.Message}");
             }
+        }
+
+        private static string FindConfigFallbackDirectory()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            var runtimeModules = Path.Combine(baseDir, "modules");
+            if (File.Exists(Path.Combine(runtimeModules, "b.config.json")))
+                return runtimeModules;
+
+            var repoModules = Path.GetFullPath(Path.Combine(baseDir, "..", "Modules"));
+            if (File.Exists(Path.Combine(repoModules, "b.config.json")))
+                return repoModules;
+
+            return baseDir;
         }
 
         private static double TryGetDouble(Dictionary<string, string> section, string key, double fallback)

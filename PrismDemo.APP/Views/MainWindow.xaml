@@ -14,6 +14,7 @@
             <Button Content="主页" Width="90" Margin="0,0,8,0" Command="{Binding NavigateHomeCommand}" />
             <Button Content="模块 A" Width="90" Margin="0,0,8,0" Command="{Binding NavigateModuleACommand}" />
             <Button Content="模块 B" Width="90" Command="{Binding NavigateModuleBCommand}" />
+            <Button Content="设置" Width="90" Margin="8,0,0,0" Command="{Binding NavigateSettingCommand}" />
         </StackPanel>
 
         <ContentControl Grid.Row="1" prism:RegionManager.RegionName="ContentRegion" />

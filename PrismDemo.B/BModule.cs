@@ -1,3 +1,5 @@
+using DryIoc;
+using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Modularity;
 using PrismDemo.B.Configuration;
@@ -8,7 +10,7 @@ using PrismDemo.B.Views;
 using PrismDemo.Core.Interfaces;
 using PrismDemo.Core.Models;
 using System;
-using System.Diagnostics;
+using static PrismDemo.Core.Services.Log;
 
 namespace PrismDemo.B
 {
@@ -20,21 +22,22 @@ namespace PrismDemo.B
 
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            Debug.WriteLine("[B] ══ RegisterTypes 开始 ══");
+            Write("[B] ══ RegisterTypes 开始 ══");
 
             Config.Initialize();
 
-            containerRegistry.Register<BDataService>();
+            var container = ((DryIocContainerExtension)containerRegistry).Instance;
+            container.Register<BDataService>(ifAlreadyRegistered: IfAlreadyRegistered.Replace);
 
             containerRegistry.RegisterForNavigation<BHomeView, BHomeViewModel>("ModuleB_Home");
-            Debug.WriteLine("[B] 已注册导航页面: BHomeView → ModuleB_Home");
+            Write("[B] 已注册导航页面: BHomeView → ModuleB_Home");
 
-            Debug.WriteLine("[B] ══ RegisterTypes 完成 ══");
+            Write("[B] ══ RegisterTypes 完成 ══");
         }
 
         public void OnInitialized(IContainerProvider containerProvider)
         {
-            Debug.WriteLine("[B] ══ OnInitialized 开始 ══");
+            Write("[B] ══ OnInitialized 开始 ══");
 
             try
             {
@@ -48,40 +51,43 @@ namespace PrismDemo.B
                 if (!moduleSwitch.IsModuleEnabled("B"))
                 {
                     moduleSwitch.SetModuleEnabledAsync("B", true).GetAwaiter().GetResult();
-                    Debug.WriteLine("[B] 模块开关已自动启用");
+                    Write("[B] 模块开关已自动启用");
                 }
 
                 InitializeService(containerProvider);
 
-                Debug.WriteLine("[B] ══ OnInitialized 完成 ══");
+                Write($"[B] ══ OnInitialized 完成 v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} ══");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[B] ❌ OnInitialized 异常: {ex}");
+                Write($"[B] ❌ OnInitialized 异常: {ex}");
             }
         }
 
         private void RegisterMainService(IContainerProvider containerProvider, IContainerExtension containerExtension)
         {
+            var container = ((DryIocContainerExtension)containerExtension).Instance;
+
             var dataService = containerProvider.Resolve<BDataService>();
             var moduleSwitch = containerProvider.Resolve<IModuleSwitch>();
             var sharedData = containerProvider.Resolve<SharedDataModel>();
 
             var service = new BMainService(moduleSwitch, sharedData, dataService);
 
+            // ServiceProxy 作为"当前服务实例持有者"接缝（见 PrismDemo.Core.Interfaces.ServiceProxy<T>）。
             var proxy = new ServiceProxy<IBService>();
             proxy.SetTarget(service);
 
-            containerExtension.RegisterInstance<ServiceProxy<IBService>>(proxy);
-            containerExtension.RegisterInstance<IBService>(service);
-            Debug.WriteLine($"[B] 注册 IBService, Hash={service.GetHashCode()}");
+            container.RegisterInstance(proxy, IfAlreadyRegistered.Replace);
+            container.RegisterInstance<IBService>(service, IfAlreadyRegistered.Replace);
+            Write($"[B] 注册 IBService, Hash={service.GetHashCode()}");
         }
 
         private void InitializeService(IContainerProvider containerProvider)
         {
             var service = containerProvider.Resolve<IBService>();
             service.Start();
-            Debug.WriteLine($"[B] 服务已解析并启动 Hash={service.GetHashCode()}");
+            Write($"[B] 服务已解析并启动 Hash={service.GetHashCode()}");
         }
 
         public void Dispose()
@@ -95,15 +101,13 @@ namespace PrismDemo.B
                 if (service is IDisposable disposable)
                 {
                     disposable.Dispose();
-                    Debug.WriteLine("[B] 已释放 IBService");
+                    Write("[B] 已释放 IBService");
                 }
-
-                _rootContainerExtension?.Resolve<ServiceProxy<IBService>>();
-                Debug.WriteLine("[B] Module.Dispose 完成");
+                Write("[B] Module.Dispose 完成");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[B] Module.Dispose 异常: {ex.Message}");
+                Write($"[B] Module.Dispose 异常: {ex.Message}");
             }
         }
     }

@@ -3,9 +3,10 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <AssemblyName>PrismDemo.A</AssemblyName>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
     <PackageReference Include="Prism.Wpf" Version="8.1.97" />
   </ItemGroup>
   <ItemGroup>
@@ -17,7 +18,7 @@
     </Content>
   </ItemGroup>
   <Target Name="CopyToModules" AfterTargets="Build">
-    <Copy SourceFiles="$(OutputPath)PrismDemo.A.dll" DestinationFolder="$(MSBuildProjectDirectory)\..\PrismDemo.APP\bin\$(Configuration)\$(TargetFramework)\modules\" />
-    <Copy SourceFiles="$(OutputPath)a.config.json" DestinationFolder="$(MSBuildProjectDirectory)\..\PrismDemo.APP\bin\$(Configuration)\$(TargetFramework)\modules\" />
+    <Copy SourceFiles="$(OutputPath)PrismDemo.A.dll" DestinationFolder="$(MSBuildProjectDirectory)\..\PrismDemo.APP\bin\$(Configuration)\Modules\" />
+    <Copy SourceFiles="$(OutputPath)a.config.json" DestinationFolder="$(MSBuildProjectDirectory)\..\PrismDemo.APP\bin\$(Configuration)\Modules\" />
   </Target>
 </Project>

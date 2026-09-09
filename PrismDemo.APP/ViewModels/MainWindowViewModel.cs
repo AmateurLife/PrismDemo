@@ -18,6 +18,7 @@ namespace PrismDemo.APP.ViewModels
         public DelegateCommand NavigateHomeCommand { get; }
         public DelegateCommand NavigateModuleACommand { get; }
         public DelegateCommand NavigateModuleBCommand { get; }
+        public DelegateCommand NavigateSettingCommand { get; }
 
         public MainWindowViewModel(IRegionManager regionManager)
         {
@@ -26,6 +27,7 @@ namespace PrismDemo.APP.ViewModels
             NavigateHomeCommand = new DelegateCommand(() => _regionManager.RequestNavigate("ContentRegion", nameof(Views.HomePage)));
             NavigateModuleACommand = new DelegateCommand(() => _regionManager.RequestNavigate("ContentRegion", "ModuleA_Home"));
             NavigateModuleBCommand = new DelegateCommand(() => _regionManager.RequestNavigate("ContentRegion", "ModuleB_Home"));
+            NavigateSettingCommand = new DelegateCommand(() => _regionManager.RequestNavigate("ContentRegion", nameof(Views.Setting)));
         }
     }
 }
