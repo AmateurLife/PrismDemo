@@ -1,0 +1,97 @@
+<UserControl x:Class="PrismDemo.APP.Views.ReportData"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrismDemo.APP.Views"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d" 
+             d:DesignHeight="540" d:DesignWidth="960">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="140"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧：属性选择 -->
+        <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Margin="3">
+            <Border BorderBrush="#AAA" BorderThickness="1" Background="#F8F8F8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+                        <Button Content="返回" Command="{Binding ChangeHomePageCmd}"
+                                Width="45" Height="26" FontSize="11"/>
+                        <Button Content="刷新" Command="{Binding RefreshCmd}"
+                                Width="45" Height="26" FontSize="11" Margin="5,0,0,0"/>
+                    </StackPanel>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding TableOptions}"
+                             SelectedItem="{Binding SelectedTable}"
+                             DisplayMemberPath="DisplayName"
+                             BorderThickness="0" Background="Transparent"
+                             Margin="3,0,3,5"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 右侧上：标题 -->
+        <Border Grid.Row="0" Grid.Column="1" BorderBrush="#AAA" BorderThickness="1"
+                Background="#F0F0F0" Margin="5,3">
+            <TextBlock Text="{Binding ReportTitle}" FontSize="18" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- 右侧下：筛选 + 数据 -->
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 筛选条件 -->
+            <Border Grid.Row="0" BorderBrush="#AAA" BorderThickness="1" Margin="5,3" Padding="6">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="起始:" VerticalAlignment="Center" FontSize="12"/>
+                    <DatePicker SelectedDate="{Binding StartTime}" Width="120" Margin="3,0,12,0"/>
+
+                    <TextBlock Text="截止:" VerticalAlignment="Center" FontSize="12"/>
+                    <DatePicker SelectedDate="{Binding EndTime}" Width="120" Margin="3,0,12,0"/>
+
+                    <TextBlock Text="字段:" VerticalAlignment="Center" FontSize="12" Margin="0,0,3,0"/>
+                    <ComboBox ItemsSource="{Binding AllColumns}" Width="170">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding ColumnName}" 
+                                          IsChecked="{Binding IsSelected}" Margin="2"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Button Content="查询" Command="{Binding QueryCmd}"
+                            Width="55" Height="26" Margin="10,0,0,0" FontSize="12"/>
+                    <Button Content="导出CSV" Command="{Binding ExportCsvCmd}"
+                            Width="65" Height="26" Margin="5,0,0,0" FontSize="12"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 报表数据展示 -->
+            <Border Grid.Row="1" BorderBrush="#AAA" BorderThickness="1" Margin="5,3">
+                <DataGrid ItemsSource="{Binding ReportData}" 
+                          AutoGenerateColumns="True"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          GridLinesVisibility="All"
+                          HeadersVisibility="Column"
+                          Margin="3"/>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

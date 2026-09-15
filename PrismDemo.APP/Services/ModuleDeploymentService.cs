@@ -1,4 +1,3 @@
-#nullable enable
 using Prism.Modularity;
 using PrismDemo.Core.Interfaces;
 using System;
@@ -13,11 +12,6 @@ using System.Threading.Tasks;
 
 namespace PrismDemo.APP.Services
 {
-    /// <summary>
-    /// 模块部署服务：注册/发现模块 DLL。
-    /// 约定：模块文件名 PrismDemo.{ModuleName}.{yyyyMMddHHmm}.dll，
-    /// 时间戳后缀用于多版本并存与取最新版本。
-    /// </summary>
     public class ModuleDeploymentService : IModuleDeploymentService
     {
         private readonly string _modulesWorkingDirectory;
@@ -28,11 +22,14 @@ namespace PrismDemo.APP.Services
             Directory.CreateDirectory(_modulesWorkingDirectory);
         }
 
-        public Task<List<AvailableModuleInfo>> GetAvailableModulesAsync(string sourcePath)
+        public async Task<List<AvailableModuleInfo>> GetAvailableModulesAsync(string sourcePath)
         {
-            var availableModules = new List<AvailableModuleInfo>();
             if (!Directory.Exists(sourcePath))
-                return Task.FromResult(availableModules);
+                return new List<AvailableModuleInfo>();
+
+            var availableModules = new List<AvailableModuleInfo>();
+
+            // ❌ 删除这行：var existingModuleNames = GetDeployedModuleNames();
 
             foreach (var dllFile in Directory.GetFiles(sourcePath, "PrismDemo.*.dll"))
             {
@@ -45,6 +42,7 @@ namespace PrismDemo.APP.Services
 
                     string moduleName = fileName.Substring("PrismDemo.".Length);
 
+                    // ✅ 不再检查是否已部署！直接验证是否为有效模块
                     var runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll")
                         .Concat(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.dll"))
                         .ToArray();
@@ -84,7 +82,7 @@ namespace PrismDemo.APP.Services
                 }
             }
 
-            return Task.FromResult(availableModules);
+            return availableModules;
         }
 
         public List<DiscoveredModuleInfo> GetLatestDeployedModules()
@@ -97,14 +95,18 @@ namespace PrismDemo.APP.Services
             foreach (var dll in Directory.GetFiles(_modulesWorkingDirectory, "PrismDemo.*.dll"))
             {
                 string fileName = Path.GetFileNameWithoutExtension(dll);
+                // 文件名格式：PrismDemo.ModuleName.YYYYMMDDHHmm
                 var parts = fileName.Split('.');
-                if (parts.Length < 3) continue;
+                if (parts.Length < 3) continue; // 至少 PrismDemo + Name + Timestamp
 
-                string baseName = string.Join(".", parts.Take(parts.Length - 1));
-                string moduleName = baseName.Substring("PrismDemo.".Length);
+                // 提取模块基础名（去掉时间戳）
+                string baseName = string.Join(".", parts.Take(parts.Length - 1)); // "PrismDemo.A"
+                string moduleName = baseName.Substring("PrismDemo.".Length);       // "A"
 
+                // 尝试解析时间戳
                 if (DateTime.TryParseExact(parts[^1], "yyyyMMddHHmm", null, DateTimeStyles.None, out var ts))
                 {
+                    // 保留最新版本
                     if (!modules.TryGetValue(moduleName, out var existing) || ts > existing.Timestamp)
                     {
                         modules[moduleName] = (ts, dll);
@@ -112,6 +114,7 @@ namespace PrismDemo.APP.Services
                 }
             }
 
+            // 返回最新版本列表
             return modules.Select(kvp => new DiscoveredModuleInfo
             {
                 ModuleName = kvp.Key,
@@ -120,18 +123,37 @@ namespace PrismDemo.APP.Services
             }).ToList();
         }
 
-        public Task DeployModuleAsync(string sourceDllPath, string targetModuleName)
+        public async Task DeployModuleAsync(string sourceDllPath, string targetModuleName)
         {
+            // 获取当前时间戳（格式：yyyyMMddHHmm）
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmm");
-            string originalName = Path.GetFileNameWithoutExtension(sourceDllPath);
-            string extension = Path.GetExtension(sourceDllPath);
 
+            // 原始文件名：PrismDemo.A.dll
+            string originalName = Path.GetFileNameWithoutExtension(sourceDllPath); // "PrismDemo.A"
+            string extension = Path.GetExtension(sourceDllPath); // ".dll"
+
+            // 新文件名：PrismDemo.A.202604031714.dll
             string newFileName = $"{originalName}.{timestamp}{extension}";
             string targetDllPath = Path.Combine(_modulesWorkingDirectory, newFileName);
 
-            File.Copy(sourceDllPath, targetDllPath, overwrite: false);
+            File.Copy(sourceDllPath, targetDllPath, overwrite: false); // 不会冲突！
+
             Debug.WriteLine($"[ModuleDeployment] 部署成功: {targetDllPath}");
-            return Task.CompletedTask;
+        }
+
+        private HashSet<string> GetDeployedModuleNames()
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!Directory.Exists(_modulesWorkingDirectory)) return names;
+
+            foreach (var dll in Directory.GetFiles(_modulesWorkingDirectory, "*.dll"))
+            {
+                var name = Path.GetFileNameWithoutExtension(dll)
+                    .Replace("PrismDemo.", "", StringComparison.OrdinalIgnoreCase);
+                names.Add(name);
+            }
+            return names;
         }
     }
+    
 }

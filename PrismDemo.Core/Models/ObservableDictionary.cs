@@ -1,7 +1,9 @@
+﻿// PrismDemo.Core/Models/ObservableDictionary.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Prism.Mvvm;
 
 namespace PrismDemo.Core.Models
@@ -17,12 +19,15 @@ namespace PrismDemo.Core.Models
             {
                 bool isAdding = !_dictionary.ContainsKey(key);
                 _dictionary[key] = value;
-                RaiseItemChanged($"Item[{key}]");
-                RaiseItemChanged("Item[]");
+
+                // 通知特定键的变化
+                RaisePropertyChanged($"Item[{key}]");
+                RaisePropertyChanged("Item[]");
+
                 if (isAdding)
                 {
-                    RaiseItemChanged("Count");
-                    RaiseItemChanged("Keys");
+                    RaisePropertyChanged("Count");
+                    RaisePropertyChanged("Keys");
                 }
             }
         }
@@ -35,62 +40,93 @@ namespace PrismDemo.Core.Models
         public void Add(TKey key, TValue value)
         {
             _dictionary.Add(key, value);
-            RaiseItemChanged($"Item[{key}]");
-            RaiseItemChanged("Item[]");
-            RaiseItemChanged("Count");
-            RaiseItemChanged("Keys");
+            RaisePropertyChanged($"Item[{key}]");
+            RaisePropertyChanged("Item[]");
+            RaisePropertyChanged("Count");
+            RaisePropertyChanged("Keys");
         }
 
-        public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            Add(item.Key, item.Value);
+        }
 
         public void Clear()
         {
             _dictionary.Clear();
-            RaiseItemChanged("Item[]");
-            RaiseItemChanged("Count");
-            RaiseItemChanged("Keys");
+            RaisePropertyChanged("Item[]");
+            RaisePropertyChanged("Count");
+            RaisePropertyChanged("Keys");
         }
 
-        public bool Contains(KeyValuePair<TKey, TValue> item) => ((IDictionary<TKey, TValue>)_dictionary).Contains(item);
-        public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return _dictionary.Contains(item);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return _dictionary.ContainsKey(key);
+        }
 
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-            => ((IDictionary<TKey, TValue>)_dictionary).CopyTo(array, arrayIndex);
+        {
+            ((IDictionary<TKey, TValue>)_dictionary).CopyTo(array, arrayIndex);
+        }
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return _dictionary.GetEnumerator();
+        }
 
         public bool Remove(TKey key)
         {
             var removed = _dictionary.Remove(key);
             if (removed)
             {
-                RaiseItemChanged($"Item[{key}]");
-                RaiseItemChanged("Item[]");
-                RaiseItemChanged("Count");
-                RaiseItemChanged("Keys");
+                RaisePropertyChanged($"Item[{key}]");
+                RaisePropertyChanged("Item[]");
+                RaisePropertyChanged("Count");
+                RaisePropertyChanged("Keys");
             }
             return removed;
         }
 
-        public bool Remove(KeyValuePair<TKey, TValue> item) => Remove(item.Key);
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return Remove(item.Key);
+        }
 
-        public bool TryGetValue(TKey key, out TValue value) => _dictionary.TryGetValue(key, out value);
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return _dictionary.TryGetValue(key, out value);
+        }
 
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        // 批量更新方法
         public void UpdateBatch(IEnumerable<KeyValuePair<TKey, TValue>> updates)
         {
             foreach (var kvp in updates)
             {
                 _dictionary[kvp.Key] = kvp.Value;
-                RaiseItemChanged($"Item[{kvp.Key}]");
+                RaisePropertyChanged($"Item[{kvp.Key}]");
             }
-            RaiseItemChanged("Item[]");
+            RaisePropertyChanged("Item[]");
         }
 
+        // 获取值，如果不存在返回默认值
         public TValue GetValueOrDefault(TKey key, TValue defaultValue = default)
-            => _dictionary.TryGetValue(key, out var value) ? value : defaultValue;
+        {
+            return _dictionary.TryGetValue(key, out var value) ? value : defaultValue;
+        }
 
-        private void RaiseItemChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
-            => OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
+        private void RaisePropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
+        {
+            OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

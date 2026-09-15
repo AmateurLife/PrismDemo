@@ -1,0 +1,15 @@
+{
+  "Database": {
+    "ConnectionString": "Server=localhost;Database=PrismDemoDB;User Id=sa;Password=Demo@1234;TrustServerCertificate=True",
+    "BackupPath": "%Desktop%"
+  },
+  "Opc": {
+    "Endpoint": "opc.tcp://127.0.0.1:4840"
+  },
+  "Logging": {
+    "LogPath": ""
+  },
+  "SettingPassword": {
+    "Password": "Demo@1234"
+  }
+}

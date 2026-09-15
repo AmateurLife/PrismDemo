@@ -1,0 +1,150 @@
+﻿<UserControl x:Class="PrismDemo.APP.Views.AlarmDetail"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrismDemo.APP.Views"
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 报警信息区域 -->
+        <Border Grid.Row="0" BorderBrush="Black" BorderThickness="1" Margin="5" Padding="10">
+            <Grid Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,0">
+                    <!-- 调试信息：显示是否已加载 -->
+                    <!--<TextBlock Text="数据加载状态: "/>
+                    <TextBox Text="{Binding IsRecordLoaded, StringFormat='{}{0}'}" Width="100" Margin="5,0"
+                              Foreground="Red" FontWeight="Bold"/>-->
+
+                    <!-- 报警记录信息 -->
+                    <TextBlock Text="设备名称: "/>
+                    <TextBox Text="{Binding AlarmRecord.DeviceName}" Width="100" Margin="5,0"
+                             IsReadOnly="True"  FontWeight="Bold" FontSize="14"/>
+
+                    <TextBlock Text="报警时间: "/>
+                    <TextBox Text="{Binding AlarmRecord.AlarmTime}" Width="100" Margin="5,0"
+                             IsReadOnly="True"  FontWeight="Bold" FontSize="14"/>
+
+                    <TextBlock Text="报警类型: "/>
+                    <TextBox Text="{Binding AlarmRecord.ConfigType}" Width="100" Margin="5,0"
+                             IsReadOnly="True"  FontWeight="Bold" FontSize="14"/>
+
+                    <TextBlock Text="报警级别: "/>
+                    <TextBox Text="{Binding AlarmConfig.AlarmLevel}" Width="100" Margin="5,0"
+                             IsReadOnly="True"  FontWeight="Bold" FontSize="14"/>
+
+                    <TextBlock Text="处理状态: "/>
+                    <TextBox Text="{Binding AlarmRecord.ProcessStatus}" Width="100" Margin="5,0"
+                             IsReadOnly="True"  FontWeight="Bold" FontSize="14"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,10,0,0">
+                    <TextBlock Text="报警内容: "/>
+                    <TextBox Text="{Binding AlarmRecord.AlarmContent}" Height="50" 
+                             IsReadOnly="True"  FontWeight="Bold" FontSize="14"/>
+                </StackPanel>
+            </Grid>
+            
+        </Border>
+
+
+        <!-- 触发条件 + 折线图区域 -->
+        <Border Grid.Row="1" BorderBrush="Black" BorderThickness="1" Margin="5" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="8*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 右侧：触发条件（只读展示） -->
+                <Grid Grid.Column="1">
+                    <StackPanel Orientation="Vertical" Margin="5,0">
+                        <TextBlock Text="触发条件" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="350">
+                            <StackPanel>
+                                <TextBlock Text="数据名:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.ConnectName}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="名称:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.Name}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="单位:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.Unit}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="上限值:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.UpperLimit}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="上限允许次数:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.UpperAllowCount}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="下限值:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.LowerLimit}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="下限允许次数:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.LowerAllowCount}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="突变比值:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.MutationThreshold}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="不变允许次数:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.UnchangedAllowCount}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="报警等级:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.AlarmLevel}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+
+                                <TextBlock Text="启用状态:" Margin="0,2"/>
+                                <TextBox Text="{Binding AlarmConfig.IsEnabled}" 
+                                         IsReadOnly="True" Margin="0,0,0,5"/>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <Button  Command="{Binding GoBackCmd}" 
+                                Padding="10,5" Margin="0,10,0,0" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="&#xe604;" Margin="0,0,3,0" 
+                                    VerticalAlignment="Center"
+                                    FontFamily="/Assets/Fonts/#iconfont"/>
+                                <TextBlock Text="返回" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 左侧：折线图区域 -->
+                <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" 
+                        Margin="0,10,5,0" Padding="5">
+                    <lvc:CartesianChart
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Series="{Binding Series}"
+                        XAxes="{Binding XAxes}"
+                        YAxes="{Binding YAxes}"
+                        ZoomMode="X"
+                        TooltipPosition="Top" />
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

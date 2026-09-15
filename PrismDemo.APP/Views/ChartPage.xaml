@@ -1,0 +1,54 @@
+﻿<UserControl x:Class="PrismDemo.APP.Views.ChartPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrismDemo.APP.Views"
+             xmlns:conv="clr-namespace:PrismDemo.APP.Converters"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d" 
+             d:DesignHeight="540" d:DesignWidth="960">
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- 主内容区（底层） -->
+        <ContentControl Grid.Row="1"
+                        prism:RegionManager.RegionName="ChartPageRegion" 
+                        Panel.ZIndex="0" />
+
+        <!-- 左上角工具栏（上层，水平排列） -->
+        <Border Grid.Row="0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Margin="0,5,0,0"
+            Panel.ZIndex="1"
+            Background="Transparent">
+            <!-- ✅ Border 支持 Padding -->
+
+            <StackPanel Orientation="Horizontal" Height="25" Background="Transparent">
+
+                <!-- 返回按钮 -->
+                <Button Command="{Binding ChangeHomePageCmd}" 
+                        Content="&lt; 返回"
+                        Width="50" 
+                        Height="25"
+                        Cursor="Hand"
+                        Margin="0,0,8,0"/>
+
+                <!-- 模块选择下拉框 -->
+                <ComboBox ItemsSource="{Binding ModuleOptions}"
+                          SelectedItem="{Binding SelectedModuleOption}"
+                          DisplayMemberPath="DisplayName"
+                          Width="150"
+                          Height="25" />
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

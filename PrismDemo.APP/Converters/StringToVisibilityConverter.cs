@@ -5,13 +5,19 @@ using System.Windows.Data;
 
 namespace PrismDemo.APP.Converters
 {
-    /// <summary>非空字符串 → Visible，空 → Collapsed。</summary>
+    /// <summary>
+    /// 将非空字符串转换为 Visibility.Visible，空字符串转换为 Visibility.Collapsed
+    /// </summary>
     public class StringToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-            => string.IsNullOrEmpty(value as string) ? Visibility.Collapsed : Visibility.Visible;
+        {
+            return string.IsNullOrWhiteSpace(value as string) ? Visibility.Collapsed : Visibility.Visible;
+        }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-            => throw new NotSupportedException();
+        {
+            throw new NotImplementedException();
+        }
     }
 }

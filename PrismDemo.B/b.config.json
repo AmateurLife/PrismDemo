@@ -1,6 +1,10 @@
 {
   "B": {
-    "Target": 50.0,
-    "TickMs": 1000
+    "BMax": 300.0,
+    "BMin": 0.0,
+    "UnitRateMax": 300.0,
+    "UnitRateMin": 0.0,
+    "OutletBUpper": 0.8,
+    "OutletBLower": 0.6
   }
 }

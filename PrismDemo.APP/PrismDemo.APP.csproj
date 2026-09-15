@@ -3,17 +3,41 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
+	<UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <Compile Remove="Models\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <None Remove="Models\**" />
+    <Page Remove="Models\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Assets\Fonts\demo_index.html" />
+    <None Remove="Assets\Fonts\iconfont.ttf" />
+    <None Remove="Resources\GMichnography.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\Fonts\demo_index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.4" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
     <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PrismDemo.Core\PrismDemo.Core.csproj" />
   </ItemGroup>
-  <Target Name="CreateModulesFolder" AfterTargets="AfterBuild">
-    <MakeDir Directories="$(OutputPath)modules" />
-  </Target>
+  <ItemGroup>
+    <Resource Include="Assets\Fonts\iconfont.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\GMichnography.png" />
+  </ItemGroup>
+	<Target Name="CreateModulesFolder" AfterTargets="AfterBuild">
+		<MakeDir Directories="$(OutputPath)modules" />
+	</Target>
 </Project>

@@ -1,104 +1,125 @@
-using DryIoc;
-using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Modularity;
+using Prism.Regions;
+using PrismDemo.Core.Interfaces;
 using PrismDemo.A.Configuration;
 using PrismDemo.A.Interfaces;
 using PrismDemo.A.Services;
 using PrismDemo.A.ViewModels;
 using PrismDemo.A.Views;
-using PrismDemo.Core.Interfaces;
-using PrismDemo.Core.Models;
 using System;
-using static PrismDemo.Core.Services.Log;
+using System.Diagnostics;
 
 namespace PrismDemo.A
 {
-    /// <summary>
-    /// 模块 A（框架演示版，对应真实工程的 NaClOModule/PACModule）。
-    /// 热重载支撑：所有服务注册采用 IfAlreadyRegistered.Replace 语义，
-    /// 使模块被第二次加载时幂等；ServiceProxy 复用容器中既有代理并更新 Target。
-    /// </summary>
     public class AModule : IModule, IDisposable
     {
-        private IContainerExtension _rootContainerExtension;
+        private Prism.Ioc.IContainerExtension? _rootContainerExtension;
         private bool _disposed;
 
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            Write("[A] ══ RegisterTypes 开始 ══");
+            Debug.WriteLine("[A] ══ RegisterTypes 开始（子容器）══");
 
             Config.Initialize();
 
-            var container = ((DryIocContainerExtension)containerRegistry).Instance;
-            container.Register<SampleDataService>(ifAlreadyRegistered: IfAlreadyRegistered.Replace);
+            try
+            {
+                var newDataService = new ADataService();
+                newDataService.EnsureTableStructure();
+                containerRegistry.RegisterInstance<ADataService>(newDataService);
+                Debug.WriteLine($"[A] 注册 ADataService, Hash={newDataService.GetHashCode()}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[A] ADataService 注册失败（模块不会完全阻塞）: {ex.Message}");
+                containerRegistry.RegisterInstance<ADataService>(new ADataService());
+            }
 
-            containerRegistry.RegisterForNavigation<AHomeView, AHomeViewModel>("ModuleA_Home");
-            Write("[A] 已注册导航页面: AHomeView → ModuleA_Home");
+            containerRegistry.RegisterForNavigation<Chart, ChartViewModel>("AChart");
+            Debug.WriteLine("[A] 已注册导航页面: Chart → AChart");
 
-            Write("[A] ══ RegisterTypes 完成 ══");
+            containerRegistry.RegisterForNavigation<ChartPage1, ChartPage1ViewModel>("A_ChartPage1");
+            containerRegistry.RegisterForNavigation<ChartPage2, ChartPage2ViewModel>("A_ChartPage2");
+            containerRegistry.RegisterForNavigation<ChartPage3, ChartPage3ViewModel>("A_ChartPage3");
+            containerRegistry.RegisterForNavigation<ChartPage4, ChartPage4ViewModel>("A_ChartPage4");
+            Debug.WriteLine("[A] 已注册控制点导航: ChartPage1~4");
+
+            containerRegistry.Register<HistoryChart1>();
+            containerRegistry.Register<HistoryChart1ViewModel>();
+            containerRegistry.Register<HistoryChart2>();
+            containerRegistry.Register<HistoryChart2ViewModel>();
+            containerRegistry.Register<HistoryChart3>();
+            containerRegistry.Register<HistoryChart3ViewModel>();
+            containerRegistry.Register<HistoryChart4>();
+            containerRegistry.Register<HistoryChart4ViewModel>();
+            Debug.WriteLine("[A] 已注册历史曲线: HistoryChart1~4");
+
+            Debug.WriteLine("[A] ══ RegisterTypes 完成 ══");
         }
 
         public void OnInitialized(IContainerProvider containerProvider)
         {
-            Write("[A] ══ OnInitialized 开始 ══");
+            Debug.WriteLine("[A] ══ OnInitialized 开始（根容器）══");
 
             try
             {
-                _rootContainerExtension = containerProvider is IContainerExtension ext
-                    ? ext
-                    : containerProvider.Resolve<IContainerExtension>();
+                IContainerExtension containerExtension;
+                if (containerProvider is IContainerExtension ext)
+                    containerExtension = ext;
+                else
+                    containerExtension = containerProvider.Resolve<IContainerExtension>();
 
-                RegisterMainService(containerProvider, _rootContainerExtension);
+                _rootContainerExtension = containerExtension;
 
+                RegisterMainService(containerProvider, containerExtension);
+
+                // 自动启用A剂模块开关，使后台循环启动
                 var moduleSwitch = containerProvider.Resolve<IModuleSwitch>();
                 if (!moduleSwitch.IsModuleEnabled("A"))
                 {
                     moduleSwitch.SetModuleEnabledAsync("A", true).GetAwaiter().GetResult();
-                    Write("[A] 模块开关已自动启用");
+                    Debug.WriteLine("[A] 模块开关已自动启用");
                 }
 
                 InitializeService(containerProvider);
 
-                Write($"[A] ══ OnInitialized 完成 v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} ══");
+                Debug.WriteLine("[A] ══ OnInitialized 完成 ══");
             }
             catch (Exception ex)
             {
-                Write($"[A] ❌ OnInitialized 异常: {ex}");
+                Debug.WriteLine($"[A] ❌ OnInitialized 异常: {ex}");
             }
         }
 
-        /// <summary>
-        /// 聚合根容器提供的依赖，构造模块主服务并注册。
-        /// ServiceProxy 为跨程序集加载上下文持有的稳定接缝：
-        /// 热重载时复用既有代理并 SetTarget 新实例，宿主引用无需重新解析。
-        /// </summary>
         private void RegisterMainService(IContainerProvider containerProvider, IContainerExtension containerExtension)
         {
-            var container = ((DryIocContainerExtension)containerExtension).Instance;
-
-            var dataService = containerProvider.Resolve<SampleDataService>();
+            var dataService = containerProvider.Resolve<ADataService>();
             var moduleSwitch = containerProvider.Resolve<IModuleSwitch>();
-            var sharedData = containerProvider.Resolve<SharedDataModel>();
+            var sharedData = containerProvider.Resolve<PrismDemo.Core.Models.SharedDataModel>();
+            var opcService = containerProvider.Resolve<IOpcService>();
+            var alarmConfigProvider = containerProvider.Resolve<IAlarmConfigProvider>();
 
-            var service = new SampleMainService(moduleSwitch, sharedData, dataService);
+            var newService = new AMainService(moduleSwitch, sharedData, dataService, opcService, alarmConfigProvider);
 
-            // ServiceProxy 作为"当前服务实例持有者"接缝：
-            // 常规 DI 消费者经 IASampleService 获取本代实例；
-            // 需要长期持有/轮询当前实例的一方经 ServiceProxy 拿到 Target。
-            var proxy = new ServiceProxy<IASampleService>();
-            proxy.SetTarget(service);
-
-            container.RegisterInstance(proxy, IfAlreadyRegistered.Replace);
-            container.RegisterInstance<IASampleService>(service, IfAlreadyRegistered.Replace);
-            Write($"[A] 注册 IASampleService, Hash={service.GetHashCode()}");
+            var serviceProxy = new ServiceProxy<IAService>();
+            serviceProxy.SetTarget(newService);
+            containerExtension.RegisterInstance<ServiceProxy<IAService>>(serviceProxy);
+            containerExtension.RegisterInstance<IAService>(newService);
+            containerExtension.RegisterInstance<IWriteableService>(newService);
+            Debug.WriteLine($"[A] 注册 IAService, Hash={newService.GetHashCode()}");
         }
 
         private void InitializeService(IContainerProvider containerProvider)
         {
-            var service = containerProvider.Resolve<IASampleService>();
-            service.Start();
-            Write($"[A] 服务已解析并启动 Hash={service.GetHashCode()}");
+            var service = containerProvider.Resolve<IAService>();
+            Debug.WriteLine($"[A] 服务已解析 Hash={service.GetHashCode()}");
+
+            if (service is AMainService concreteService)
+            {
+                concreteService.EnsureInitialized();
+                Debug.WriteLine("[A] 服务冷启动完成");
+            }
         }
 
         public void Dispose()
@@ -108,17 +129,20 @@ namespace PrismDemo.A
 
             try
             {
-                var service = _rootContainerExtension?.Resolve<IASampleService>();
-                if (service is IDisposable disposable)
+                Debug.WriteLine("[A] Module.Dispose 开始");
+
+                var mainService = _rootContainerExtension?.Resolve<IAService>();
+                if (mainService is IDisposable d)
                 {
-                    disposable.Dispose();
-                    Write("[A] 已释放 IASampleService");
+                    d.Dispose();
+                    Debug.WriteLine("[A] 已释放 IAService");
                 }
-                Write("[A] Module.Dispose 完成");
+
+                Debug.WriteLine("[A] Module.Dispose 完成");
             }
             catch (Exception ex)
             {
-                Write($"[A] Module.Dispose 异常: {ex.Message}");
+                Debug.WriteLine($"[A] Module.Dispose 异常: {ex.Message}");
             }
         }
     }

@@ -1,37 +1,40 @@
+using PrismDemo.Core.Configuration;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace PrismDemo.Core.Services
 {
-    /// <summary>
-    /// 极简日志服务（框架演示版）。
-    /// 真实工程使用 AlertLogger 同时写 Debug 与日志文件，
-    /// Demo 保留同等能力便于框架流程的可观测与排查。
-    /// </summary>
     public static class Log
     {
+        private static readonly string _path;
+        private static readonly StreamWriter _writer;
         private static readonly object _lock = new();
-        private static string _directory;
 
-        public static void Initialize()
+        static Log()
         {
-            _directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log");
-            Directory.CreateDirectory(_directory);
+            _path = Config.LogPath ??
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.log");
+            var dir = Path.GetDirectoryName(_path);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+            _writer = new StreamWriter(_path, true, Encoding.UTF8) { AutoFlush = true };
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => { _writer?.Dispose(); };
         }
 
-        public static void Write(string message)
+        public static bool write(string msg)
         {
-            Debug.WriteLine(message);
-
-            lock (_lock)
+            try
             {
-                try
+                lock (_lock)
                 {
-                    var file = Path.Combine(_directory, $"app_{DateTime.Now:yyyyMM}.log");
-                    File.AppendAllText(file, $"{DateTime.Now:HH:mm:ss.fff} {message}{Environment.NewLine}");
+                    _writer.WriteLine(msg);
                 }
-                catch { }
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
     }

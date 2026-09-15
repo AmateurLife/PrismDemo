@@ -1,20 +1,18 @@
-using PrismDemo.Core.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
 namespace PrismDemo.B.Configuration
 {
-    /// <summary>
-    /// 模块级配置（框架演示版，无业务含义）。
-    /// 查找顺序：模块 DLL 所在目录 → BaseDirectory\modules → BaseDirectory\..\Modules（仓储）。
-    /// </summary>
     public static class Config
     {
-        public static double Target { get; set; } = 50.0;
-        public static int TickMs { get; set; } = 1000;
+        public static double OutletBUpper { get; set; } = 0.8;
+        public static double OutletBLower { get; set; } = 0.6;
+        public static double BMax { get; set; } = 300.0;
+        public static double BMin { get; set; } = 0.0;
+        public static double UnitRateMax { get; set; } = 300.0;
+        public static double UnitRateMin { get; set; } = 0.0;
 
         private static bool _initialized;
 
@@ -29,14 +27,31 @@ namespace PrismDemo.B.Configuration
                 var configFile = Path.Combine(configDir ?? "", "b.config.json");
 
                 if (!File.Exists(configFile))
-                    configDir = FindConfigFallbackDirectory();
+                {
+                    var fallbackDir = Path.GetFullPath(
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Modules"));
+                    configFile = Path.Combine(fallbackDir, "b.config.json");
+                    if (File.Exists(configFile))
+                        configDir = fallbackDir;
+                }
 
-                var section = ConfigLoader.LoadSection(configDir, "b.config.json", "B");
+                if (!File.Exists(configFile))
+                {
+                    Debug.WriteLine("[B.Config] 未找到 b.config.json，使用默认值");
+                    return;
+                }
 
-                Target = TryGetDouble(section, "Target", Target);
-                TickMs = TryGetInt(section, "TickMs", TickMs);
+                var jsonConfig = PrismDemo.Core.Configuration.Config.LoadModuleConfig(configDir, "b.config.json");
+                var section = jsonConfig.GetSection("B");
 
-                Debug.WriteLine($"[B.Config] 已加载: Target={Target}, TickMs={TickMs}");
+                OutletBUpper = TryGetDouble(section, "OutletBUpper", OutletBUpper);
+                OutletBLower = TryGetDouble(section, "OutletBLower", OutletBLower);
+                BMax = TryGetDouble(section, "BMax", BMax);
+                BMin = TryGetDouble(section, "BMin", BMin);
+                UnitRateMax = TryGetDouble(section, "UnitRateMax", UnitRateMax);
+                UnitRateMin = TryGetDouble(section, "UnitRateMin", UnitRateMin);
+
+                Debug.WriteLine($"[B.Config] 已加载: OutletBUpper={OutletBUpper}, OutletBLower={OutletBLower}");
             }
             catch (Exception ex)
             {
@@ -44,25 +59,9 @@ namespace PrismDemo.B.Configuration
             }
         }
 
-        private static string FindConfigFallbackDirectory()
+        private static double TryGetDouble(Microsoft.Extensions.Configuration.IConfigurationSection section, string key, double fallback)
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-
-            var runtimeModules = Path.Combine(baseDir, "modules");
-            if (File.Exists(Path.Combine(runtimeModules, "b.config.json")))
-                return runtimeModules;
-
-            var repoModules = Path.GetFullPath(Path.Combine(baseDir, "..", "Modules"));
-            if (File.Exists(Path.Combine(repoModules, "b.config.json")))
-                return repoModules;
-
-            return baseDir;
+            return double.TryParse(section[key], out var val) ? val : fallback;
         }
-
-        private static double TryGetDouble(Dictionary<string, string> section, string key, double fallback)
-            => double.TryParse(section.GetValueOrDefault(key), out var val) ? val : fallback;
-
-        private static int TryGetInt(Dictionary<string, string> section, string key, int fallback)
-            => int.TryParse(section.GetValueOrDefault(key), out var val) ? val : fallback;
     }
 }

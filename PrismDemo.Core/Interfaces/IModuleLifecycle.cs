@@ -1,3 +1,4 @@
+﻿using Prism.Ioc;
 using System.Threading.Tasks;
 
 namespace PrismDemo.Core.Interfaces
@@ -9,6 +10,10 @@ namespace PrismDemo.Core.Interfaces
         Task UpdateModuleAsync(string moduleName, string sourceDllPath);
         Task UnloadModuleAsync(string moduleName);
 
-        void InitializeModule(string moduleName, Prism.Ioc.IContainerProvider rootContainer);
+        /// <summary>
+        /// 初始化模块
+        /// rootContainer: 根容器，模块可在其中注册全局单例
+        /// </summary>
+        void InitializeModule(string moduleName, IContainerProvider rootContainer);
     }
 }

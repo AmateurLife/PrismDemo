@@ -1,106 +1,350 @@
-<UserControl x:Class="PrismDemo.APP.Views.Setting"
+﻿<UserControl x:Class="PrismDemo.APP.Views.Setting"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrismDemo.APP.Views"
              xmlns:prism="http://prismlibrary.com/"
              xmlns:converters="clr-namespace:PrismDemo.APP.Converters"
-             prism:ViewModelLocator.AutoWireViewModel="True">
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d" 
+             d:DesignHeight="540" d:DesignWidth="960">
     <UserControl.Resources>
-        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
-        <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1.2*" />
-            <ColumnDefinition Width="8.8*" />
+            <ColumnDefinition Width="1.5*"/>
+            <ColumnDefinition Width="8.5*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- 左侧导航 -->
+        <!-- 左侧导航栏 -->
         <Border Grid.Column="0" BorderBrush="Black" BorderThickness="1" Margin="3">
             <StackPanel Margin="10">
-                <TextBlock Text="设置导航" FontSize="18" Margin="0,0,0,15" />
-                <Button Content="模块管理" Command="{Binding NavigateToSectionCommand}" CommandParameter="ModuleSection" Margin="5" Padding="10,5" />
-                <Button Content="整系统重载" Command="{Binding NavigateToSectionCommand}" CommandParameter="ReloadSection" Margin="5" Padding="10,5" />
-                <Button Content="关于" Command="{Binding NavigateToSectionCommand}" CommandParameter="AboutSection" Margin="5" Padding="10,5" />
-                <Button Content="&lt; 返回首页" Command="{Binding ChangeHomePageCmd}" HorizontalAlignment="Left" Margin="5,20,5,5" Padding="10,5" />
+                <TextBlock Text="设置导航" FontSize="20" Margin="0,0,0,15"/>
+
+                <Button Content="通用设置"
+                        Command="{Binding NavigateToSectionCommand}"
+                        CommandParameter="GeneralSection"
+                        Margin="5" Padding="10,5"/>
+
+                <Button Content="连接节点配置"
+                        Command="{Binding NavigateToSectionCommand}"
+                        CommandParameter="ConnectSection"
+                        Margin="5" Padding="10,5"/>
+
+                <Button Content="模块管理"
+                        Command="{Binding NavigateToSectionCommand}"
+                        CommandParameter="ModuleSection"
+                        Margin="5" Padding="10,5"/>
+
+                <Button Content="关于"
+                        Command="{Binding NavigateToSectionCommand}"
+                        CommandParameter="AboutSection"
+                        Margin="5" Padding="10,5"/>
+
+                <Button Content="&lt; 返回首页"
+                        Command="{Binding ChangeHomePageCmd}"
+                        HorizontalAlignment="Left"
+                        Margin="5" Padding="10,5"/>
             </StackPanel>
         </Border>
 
-        <!-- 右侧内容 -->
+        <!-- 右侧可滚动内容区 -->
         <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="3">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="16">
+            <ScrollViewer x:Name="ContentScroller" 
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="ContentRoot" Margin="20">
 
-                    <!-- 模块管理 -->
-                    <StackPanel x:Name="ModuleSection" Margin="0,0,0,32">
-                        <TextBlock Text="模块管理" FontSize="20" FontWeight="Bold" />
+                    <!-- 通用设置 -->
+                    <StackPanel x:Name="GeneralSection" Margin="0,0,0,40">
+                        <TextBlock  FontSize="24" FontWeight="Bold">
+                            <Run Text="通用设置"/>
+                            <Run Text="AmateurLife" Foreground="Transparent"/>
+                        </TextBlock>
+                        <TextBlock Text="此处可放置语言、主题、默认路径等选项..." 
+                                   TextWrapping="Wrap" Margin="0,10"/>
 
-                        <!-- 导入新模块 -->
-                        <GroupBox Header="导入新模块" Margin="0,10,0,12" Padding="10">
+                        <!-- 重新加载系统 -->
+                        <GroupBox Header="重新加载系统" Margin="0,10,0,0" Padding="12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="重新加载系统"
+                                            Command="{Binding ReloadSystemCommand}"
+                                            Padding="14,7"
+                                            IsEnabled="{Binding IsReloading, Converter={StaticResource InverseBoolConverter}}"
+                                            Background="#2196F3"
+                                            Foreground="White"
+                                            FontWeight="SemiBold"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding SystemReloadStatus}"
+                                           Foreground="#2196F3"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"
+                                           Margin="0,8,0,0"
+                                           Visibility="{Binding SystemReloadStatus, Converter={StaticResource StringToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!--#region 数据库备份功能 -->
+                        <GroupBox Header="数据库备份" Margin="0,10,0,0" Padding="12">
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,8">
-                                    <TextBlock Text="模块仓库路径:" VerticalAlignment="Center" Width="100" />
-                                    <Button Content="浏览..." Command="{Binding BrowseCommand}" Width="60" Margin="5,0" DockPanel.Dock="Right" />
-                                    <TextBox Text="{Binding ModuleSourcePath, UpdateSourceTrigger=PropertyChanged}" Margin="5,0" />
+                                    <TextBlock Text="备份路径:" VerticalAlignment="Center" Width="70"/>
+                                    <TextBox Text="{Binding BackupPath, UpdateSourceTrigger=PropertyChanged}" 
+                                             Margin="5,0" VerticalContentAlignment="Center"/>
+                                    <Button Content="浏览..." 
+                                            Command="{Binding BrowseBackupPathCommand}" 
+                                            Width="60" Margin="5,0,0,0" DockPanel.Dock="Right"/>
                                 </DockPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="扫描可用模块" Command="{Binding ScanModulesCommand}" Padding="8,4" Margin="0,0,10,0" />
-                                    <TextBlock Text="(从仓库路径查找未部署的模块)" VerticalAlignment="Center" Foreground="#666" />
+
+                                <DockPanel Margin="0,0,0,8">
+                                    <TextBlock Text="文件名格式:" VerticalAlignment="Center" Width="70"/>
+                                    <TextBox Text="{Binding FilenameFormat, UpdateSourceTrigger=PropertyChanged}" 
+                                             Margin="5,0" VerticalContentAlignment="Center"
+                                             ToolTip="可用占位符: {数据库名称} {日期} {时间} {时间戳} {年} {月} {日}"/>
+                                </DockPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="保留天数:" VerticalAlignment="Center" Width="70"/>
+                                    <TextBox Text="{Binding RetentionDays, UpdateSourceTrigger=PropertyChanged}" 
+                                             Width="60" Margin="5,0" VerticalContentAlignment="Center"/>
+                                    <CheckBox Content="启用压缩" IsChecked="{Binding EnableCompression}" 
+                                              VerticalAlignment="Center" Margin="20,0,0,0"/>
+                                    <CheckBox Content="启用验证" IsChecked="{Binding EnableVerification}" 
+                                              VerticalAlignment="Center" Margin="20,0,0,0"/>
                                 </StackPanel>
 
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="执行备份"
+                                            Command="{Binding BackupDatabaseCommand}"
+                                            Padding="14,7"
+                                            IsEnabled="{Binding IsBackingUp, Converter={StaticResource InverseBoolConverter}}"
+                                            Background="#2196F3"
+                                            Foreground="White"
+                                            FontWeight="SemiBold"
+                                            BorderThickness="0"
+                                            Cursor="Hand"/>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding BackupStatus}"
+                                           Foreground="#2196F3"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"
+                                           Margin="0,8,0,0"
+                                           Visibility="{Binding BackupStatus, Converter={StaticResource StringToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </GroupBox>
+                        <!--#endregion-->
+                    </StackPanel>
+
+                    <!-- 连接节点配置 -->
+                    <StackPanel x:Name="ConnectSection" Margin="0,0,0,40">
+                        <TextBlock Text="连接节点配置" FontSize="24" FontWeight="Bold"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="5,10">
+                            <TextBlock Text="数据读取节点" VerticalAlignment="Center" Width="100"/>
+                            <Button Content="配置" Command="{Binding ChangeSettingConnectCmd}"
+                                    VerticalAlignment="Center" Width="50"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="5,10">
+                            <TextBlock Text="报警设置" VerticalAlignment="Center" Width="100"/>
+                            <Button Content="配置" Command="{Binding ChangeSettingAlarmCmd}"
+                                    VerticalAlignment="Center" Width="50"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 模块管理区域 -->
+                    <StackPanel x:Name="ModuleSection" Margin="0,0,0,40">
+                        <TextBlock Text="模块管理" FontSize="24" FontWeight="Bold"/>
+
+                        <!-- 🔥 新增：模块源路径与扫描区 -->
+                        <GroupBox Header="导入新模块" Margin="0,10,0,15" Padding="10">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,8">
+                                    <TextBlock Text="模块仓库路径:" VerticalAlignment="Center" Width="100"/>
+                                    <TextBox Text="{Binding ModuleSourcePath, UpdateSourceTrigger=PropertyChanged}" 
+                         Margin="5,0" />
+                                    <Button Content="浏览..." 
+                        Command="{Binding BrowseCommand}" 
+                        Width="60" Margin="5,0" 
+                        DockPanel.Dock="Right"/>
+                                </DockPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                    <Button Content="扫描可用模块" 
+                        Command="{Binding ScanModulesCommand}" 
+                        Padding="8,4" Margin="0,0,10,0"/>
+                                    <TextBlock Text="(从仓库路径查找未部署的模块)" 
+                           VerticalAlignment="Center" Foreground="#666"/>
+                                </StackPanel>
+
+                                <!-- 显示扫描到的新模块 -->
                                 <ItemsControl ItemsSource="{Binding DiscoveredModules}" Margin="0,10,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#E3F2FD" CornerRadius="4" Padding="12,8" Margin="0,4"
-                                                    BorderBrush="#90CAF9" BorderThickness="1">
+                                            <Border Background="#E3F2FD"
+                                CornerRadius="4"
+                                Padding="12,8"
+                                Margin="0,4"
+                                BorderBrush="#90CAF9"
+                                BorderThickness="1">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding ModuleName}" FontWeight="Bold" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Version}" Foreground="#666" Margin="10,0" />
-                                                    <Button Grid.Column="2" Content="部署"
-                                                            Command="{Binding DataContext.DeployModuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                            CommandParameter="{Binding}" Padding="8,2" />
+                                                    <TextBlock Text="{Binding ModuleName}" FontWeight="Bold"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Version}" Foreground="#666" Margin="10,0"/>
+                                                    <Button Grid.Column="2" 
+                                        Content="部署" 
+                                        Command="{Binding DataContext.DeployModuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Padding="8,2"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+
+                                <!-- 无模块提示 -->
+                                <TextBlock Text="未发现可部署的新模块。"
+                                           FontStyle="Italic"
+                                           Foreground="#888">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DiscoveredModules.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- 已部署模块 -->
-                        <TextBlock Text="已部署模块" FontWeight="Bold" Margin="0,0,0,8" />
-                        <TextBlock Text="{Binding ReloadStatus}" Foreground="#2196F3" FontWeight="SemiBold" Margin="0,0,0,8"
-                                   Visibility="{Binding ReloadStatus, Converter={StaticResource StringToVisibilityConverter}}" />
-                        <ItemsControl ItemsSource="{Binding AvailableModules}">
+                        <!-- 原有的已部署模块列表 -->
+                        <TextBlock Text="已部署模块" FontWeight="Bold" Margin="0,0,0,8"/>
+                        
+                        <!-- 热重载状态提示 -->
+                        <TextBlock Text="{Binding ReloadStatus}" 
+                                   Foreground="#2196F3" 
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"
+                                   Visibility="{Binding ReloadStatus, Converter={StaticResource StringToVisibilityConverter}}"/>
+                        
+                        <ItemsControl ItemsSource="{Binding AvailableModules}" Margin="0,10">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="12" Margin="0,4" Background="#F5F5F5" CornerRadius="6"
-                                            BorderBrush="#E0E0E0" BorderThickness="1">
+                                    <Border Padding="12" Margin="0,4" Background="#F5F5F5" CornerRadius="6" BorderBrush="#E0E0E0" BorderThickness="1">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0">
-                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" />
-                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <TextBlock Text="Version: " Foreground="#666666" FontSize="12" />
-                                                    <TextBlock Text="{Binding AssemblyVersion}" Foreground="#666666" FontSize="12" />
-                                                    <TextBlock Text=" | 部署时间: " Foreground="Gray" FontSize="12" Margin="8,0,0,0" />
-                                                    <TextBlock Text="{Binding DeployTime}" Foreground="Gray" FontSize="12" />
-                                                </StackPanel>
-                                                <TextBlock Text="{Binding Status}" FontSize="11" Margin="0,2,0,0" Foreground="Gray" />
+                                            
+                                            <!-- 模块信息 -->
+                                             <StackPanel Grid.Column="0">
+                                                 <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" />
+                                                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                     <TextBlock Text="Version: " Foreground="#666666" FontSize="12" />
+                                                     <TextBlock Text="{Binding AssemblyVersion}" Foreground="#666666" FontSize="12" />
+                                                     <TextBlock Text=" | 部署时间: " Foreground="Gray" FontSize="12" Margin="8,0,0,0" />
+                                                     <TextBlock Text="{Binding DeployTime}" Foreground="Gray" FontSize="12" />
+                                                 </StackPanel>
+                                                 <TextBlock Text="{Binding Status}" FontSize="11" Margin="0,2,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="Gray"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#4CAF50"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                                    <Setter Property="Foreground" Value="#F44336"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
                                             </StackPanel>
-                                            <Button Grid.Column="1" Content="热重载"
+                                            
+                                            <!-- 热重载按钮 -->
+                                            <Button Grid.Column="1" 
+                                                    Content="热重载" 
                                                     Command="{Binding DataContext.ReloadModuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}" Padding="12,6" Margin="0,0,8,0"
-                                                    Background="#FF9800" Foreground="White" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" />
-                                            <ToggleButton Grid.Column="2" IsChecked="{Binding IsEnabled}" Width="50" Height="24" VerticalAlignment="Center" />
+                                                    CommandParameter="{Binding}"
+                                                    Padding="12,6" 
+                                                    Margin="0,0,8,0"
+                                                    Background="#FF9800"
+                                                    Foreground="White"
+                                                    FontWeight="SemiBold"
+                                                    BorderThickness="0"
+                                                    Cursor="Hand">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border Background="{TemplateBinding Background}" 
+                                                                            CornerRadius="4" 
+                                                                            Padding="{TemplateBinding Padding}">
+                                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Border>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="#F57C00"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter Property="Background" Value="#E65100"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                            
+                                            <!-- 开关 -->
+                                            <ToggleButton Grid.Column="2" 
+                                                          IsChecked="{Binding IsEnabled}" 
+                                                          Width="50" Height="24"
+                                                          VerticalAlignment="Center">
+                                                <ToggleButton.Style>
+                                                    <Style TargetType="ToggleButton">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="ToggleButton">
+                                                                    <Border x:Name="Border" 
+                                                                            Background="#BDBDBD" 
+                                                                            CornerRadius="12" 
+                                                                            Width="50" Height="24">
+                                                                        <Ellipse x:Name="Thumb" 
+                                                                                 Fill="White" 
+                                                                                 Width="20" Height="20" 
+                                                                                 HorizontalAlignment="Left" 
+                                                                                 Margin="2,0,0,0"/>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsChecked" Value="True">
+                                                                            <Setter TargetName="Border" Property="Background" Value="#4CAF50"/>
+                                                                            <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                                                            <Setter TargetName="Thumb" Property="Margin" Value="0,0,2,0"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </ToggleButton.Style>
+                                            </ToggleButton>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -108,32 +352,20 @@
                         </ItemsControl>
                     </StackPanel>
 
-                    <!-- 整系统重载 -->
-                    <StackPanel x:Name="ReloadSection" Margin="0,0,0,32">
-                        <TextBlock Text="整系统重载" FontSize="20" FontWeight="Bold" />
-                        <GroupBox Header="重新加载系统" Margin="0,10,0,0" Padding="12">
-                            <StackPanel>
-                                <Button Content="重新加载系统" Command="{Binding ReloadSystemCommand}" Padding="14,7"
-                                        IsEnabled="{Binding IsReloading, Converter={StaticResource InverseBoolConverter}}"
-                                        Background="#2196F3" Foreground="White" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" />
-                                <TextBlock Text="{Binding SystemReloadStatus}" Foreground="#2196F3" FontWeight="SemiBold"
-                                           TextWrapping="Wrap" Margin="0,8,0,0"
-                                           Visibility="{Binding SystemReloadStatus, Converter={StaticResource StringToVisibilityConverter}}" />
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
 
                     <!-- 关于 -->
-                    <StackPanel x:Name="AboutSection" Margin="0,0,0,32">
-                        <TextBlock Text="关于" FontSize="20" FontWeight="Bold" />
-                        <TextBlock Text="PrismDemo 动态模块化框架演示" TextWrapping="Wrap" Margin="0,10" />
+                    <StackPanel x:Name="AboutSection" Margin="0,0,0,40">
+                        <TextBlock Text="关于" FontSize="24" FontWeight="Bold"/>
+                        <TextBlock Text="PrismDemo模块化控制系统" 
+                                   TextWrapping="Wrap" Margin="0,10"/>
                         <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                            <TextBlock Text="编译时间: " FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding BuildTime}" Foreground="#666" />
+                            <TextBlock Text="编译时间: " FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding BuildTime}" Foreground="#666"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <Rectangle Height="60" />
+                    <!-- 占位（确保能滚动到底部） -->
+                    <Rectangle Height="100"/>
                 </StackPanel>
             </ScrollViewer>
         </Border>

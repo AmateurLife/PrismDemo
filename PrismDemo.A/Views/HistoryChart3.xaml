@@ -1,0 +1,77 @@
+<UserControl x:Class="PrismDemo.A.Views.HistoryChart3"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d" 
+             d:DesignHeight="640" d:DesignWidth="1100">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Button Content="← 返回" Command="{Binding BackCommand}"
+                    Width="80" Height="30" HorizontalAlignment="Left"
+                    Background="#607D8B" Foreground="White" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="4"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </Grid>
+
+        <Border Grid.Row="1" Background="#F8F8F8" Padding="12,10" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="起始:" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Margin="0,0,6,0"/>
+                <DatePicker SelectedDate="{Binding StartDate}" Width="140" Margin="0,0,20,0"/>
+                <TextBlock Text="结束:" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Margin="0,0,6,0"/>
+                <DatePicker SelectedDate="{Binding EndDate}" Width="140" Margin="0,0,20,0"/>
+                <Button Content="查询"     Command="{Binding QueryCommand}"  Width="70" Height="28"
+                        Background="#2196F3" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+                <Button Content="导出CSV"  Command="{Binding ExportCommand}" Width="80" Height="28"
+                        Background="#4CAF50" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+                <Button Content="重置缩放" Width="70" Height="28"
+                        Background="#FF9800" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Margin="10,0,0,0"
+                        Command="{Binding ResetZoomCommand}">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <WrapPanel Grid.Row="2" Background="#F8F8F8" Margin="0,0,0,8">
+            <CheckBox Content="沉后水浊度"   IsChecked="{Binding IsOutTurbidityChecked}"    Foreground="#1E90FF" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="原水流量"     IsChecked="{Binding IsFlowChecked}"     Foreground="#1976D2" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="原水浊度"     IsChecked="{Binding IsInTurbidityChecked}"    Foreground="#FF9800" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="出厂水浊度"   IsChecked="{Binding IsOutletChecked}" Foreground="#00BCD4" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="3#末端加药量"   IsChecked="{Binding IsBackAChecked}"  Foreground="#4CAF50" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="智能加药量"   IsChecked="{Binding IsPredAChecked}"  Foreground="#8BC34A" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="智能投加率"     IsChecked="{Binding IsPredUnitRateChecked}" Foreground="#FF5722" FontWeight="Bold" FontSize="13" Margin="0,0,14,0" VerticalAlignment="Center"/>
+            <CheckBox Content="是否智能加药" IsChecked="{Binding IsIsAutoChecked}"   Foreground="#9C27B0" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+        </WrapPanel>
+
+        <Border Grid.Row="3" BorderBrush="#DDD" BorderThickness="1" Background="White">
+            <lvc:CartesianChart x:Name="Chart"
+                Series="{Binding Series}"
+                XAxes="{Binding XAxes}"
+                YAxes="{Binding YAxes}"
+                ZoomMode="X"
+                TooltipPosition="Top"
+                LegendPosition="Top"
+                AnimationsSpeed="0:0:0"
+                Margin="10"/>
+        </Border>
+    </Grid>
+</UserControl>

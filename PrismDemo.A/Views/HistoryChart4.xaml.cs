@@ -1,0 +1,17 @@
+using System;
+using System.Windows.Controls;
+
+namespace PrismDemo.A.Views
+{
+    public partial class HistoryChart4 : UserControl
+    {
+        public HistoryChart4()
+        {
+            InitializeComponent();
+            Unloaded += (s, e) =>
+            {
+                try { (Chart as IDisposable)?.Dispose(); } catch { }
+            };
+        }
+    }
+}

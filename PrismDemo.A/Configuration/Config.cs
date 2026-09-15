@@ -1,21 +1,17 @@
-using PrismDemo.Core.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
 namespace PrismDemo.A.Configuration
 {
-    /// <summary>
-    /// 模块级配置（框架演示版，无业务含义）。
-    /// 查找顺序：模块 DLL 所在目录 → BaseDirectory\modules → BaseDirectory\..\Modules（仓储）。
-    /// </summary>
     public static class Config
     {
-        public static double SampleUpper { get; set; } = 80.0;
-        public static double SampleLower { get; set; } = 20.0;
-        public static int RefreshSeconds { get; set; } = 2;
+        public static double AMax { get; set; } = 300.0;
+        public static double AMin { get; set; } = 0.0;
+        public static double UnitRateMax { get; set; } = 300.0;
+        public static double UnitRateMin { get; set; } = 0.0;
+        public static string FlocExePath { get; set; } = @"..\floc\floc-observer-2.exe";
 
         private static bool _initialized;
 
@@ -30,15 +26,32 @@ namespace PrismDemo.A.Configuration
                 var configFile = Path.Combine(configDir ?? "", "a.config.json");
 
                 if (!File.Exists(configFile))
-                    configDir = FindConfigFallbackDirectory();
+                {
+                    var fallbackDir = Path.GetFullPath(
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Modules"));
+                    configFile = Path.Combine(fallbackDir, "a.config.json");
+                    if (File.Exists(configFile))
+                        configDir = fallbackDir;
+                }
 
-                var section = ConfigLoader.LoadSection(configDir, "a.config.json", "A");
+                if (!File.Exists(configFile))
+                {
+                    Debug.WriteLine("[A.Config] 未找到 a.config.json，使用默认值");
+                    return;
+                }
 
-                SampleUpper = TryGetDouble(section, "SampleUpper", SampleUpper);
-                SampleLower = TryGetDouble(section, "SampleLower", SampleLower);
-                RefreshSeconds = TryGetInt(section, "RefreshSeconds", RefreshSeconds);
+                var jsonConfig = PrismDemo.Core.Configuration.Config.LoadModuleConfig(configDir, "a.config.json");
+                var section = jsonConfig.GetSection("A");
 
-                Debug.WriteLine($"[A.Config] 已加载: SampleUpper={SampleUpper}, SampleLower={SampleLower}, RefreshSeconds={RefreshSeconds}");
+                AMax = TryGetDouble(section, "AMax", AMax);
+                AMin = TryGetDouble(section, "AMin", AMin);
+                UnitRateMax = TryGetDouble(section, "UnitRateMax", UnitRateMax);
+                UnitRateMin = TryGetDouble(section, "UnitRateMin", UnitRateMin);
+
+                var flocSection = jsonConfig.GetSection("Floc");
+                FlocExePath = flocSection["ExePath"] ?? FlocExePath;
+
+                Debug.WriteLine($"[A.Config] 已加载: FlocExePath={FlocExePath}");
             }
             catch (Exception ex)
             {
@@ -46,25 +59,9 @@ namespace PrismDemo.A.Configuration
             }
         }
 
-        private static string FindConfigFallbackDirectory()
+        private static double TryGetDouble(Microsoft.Extensions.Configuration.IConfigurationSection section, string key, double fallback)
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-
-            var runtimeModules = Path.Combine(baseDir, "modules");
-            if (File.Exists(Path.Combine(runtimeModules, "a.config.json")))
-                return runtimeModules;
-
-            var repoModules = Path.GetFullPath(Path.Combine(baseDir, "..", "Modules"));
-            if (File.Exists(Path.Combine(repoModules, "a.config.json")))
-                return repoModules;
-
-            return baseDir;
+            return double.TryParse(section[key], out var val) ? val : fallback;
         }
-
-        private static double TryGetDouble(Dictionary<string, string> section, string key, double fallback)
-            => double.TryParse(section.GetValueOrDefault(key), out var val) ? val : fallback;
-
-        private static int TryGetInt(Dictionary<string, string> section, string key, int fallback)
-            => int.TryParse(section.GetValueOrDefault(key), out var val) ? val : fallback;
     }
 }

@@ -1,0 +1,130 @@
+﻿<UserControl x:Class="PrismDemo.APP.Views.HistoricalAlarm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:PrismDemo.APP.Views"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d" 
+             d:DesignHeight="540" d:DesignWidth="960">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="80"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 筛选区域 -->
+        <Grid Grid.Row="0">
+            <Border BorderBrush="Black"
+                    BorderThickness="1"
+                    Background="Transparent"
+                    Margin="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 返回按钮 -->
+                    <Button Command="{Binding ChangeHomePageCmd}" Content="&lt; 返回"
+                            Width="50" Height="30"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"/>
+
+                    <!-- 筛选条件 -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Content="开始时间:" Grid.Column="0" VerticalAlignment="Center"/>
+                        <DatePicker Grid.Column="1" SelectedDate="{Binding StartTime}"
+                                     Margin="5"/>
+
+                        <Label Content="结束时间:" Grid.Column="2" VerticalAlignment="Center"/>
+                        <DatePicker Grid.Column="3" SelectedDate="{Binding EndTime}"
+                                     Margin="5"/>
+
+                        <Label Content="报警类型:" Grid.Column="4" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="5" ItemsSource="{Binding AlarmTypes}"
+                                  SelectedItem="{Binding SelectedAlarmType}"
+                                   Margin="5"/>
+
+                        <Button  Grid.Column="6" Command="{Binding QueryCmd}"
+                                Margin="5" Padding="10,5">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="&#xe625;" Margin="0,0,3,0" 
+                                        VerticalAlignment="Center"
+                                        FontFamily="/Assets/Fonts/#iconfont"/>
+                                <TextBlock Text="查询" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 报警列表区域 -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="40"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderBrush="Black"
+                    BorderThickness="1"
+                    Background="Transparent"
+                    Margin="5">
+                <DataGrid ItemsSource="{Binding AlarmRecords}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          RowHeight="30"
+                          AlternatingRowBackground="#F0F0F0"
+                          MouseDoubleClick="DataGrid_MouseDoubleClick">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="时间" Binding="{Binding AlarmTime}" Width="150"/>
+                        <DataGridTextColumn Header="设备名称" Binding="{Binding DeviceName}" Width="120"/>
+                        <DataGridTextColumn Header="报警类型" Binding="{Binding ConfigType}" Width="120"/>
+                        <DataGridTextColumn Header="报警内容" Binding="{Binding AlarmContent}" Width="200"/>
+                        <DataGridTextColumn Header="处理状态" Binding="{Binding ProcessStatus}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- 分页栏 -->
+            <Border Grid.Row="1" Margin="5,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Command="{Binding PreviousPageCmd}"
+                            Width="60" Height="26" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xe8ef;" Margin="0,0,3,0" 
+                                VerticalAlignment="Center"
+                                FontFamily="/Assets/Fonts/#iconfont"/>
+                            <TextBlock Text="上一页" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="{Binding PageInfo}" VerticalAlignment="Center" Width="160"
+                               TextAlignment="Center" FontSize="13"/>
+                    <Button Command="{Binding NextPageCmd}"
+                            Width="60" Height="26" Margin="10,0,0,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="下一页" Margin="0,0,3,0"  VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xe8f0;" 
+                                VerticalAlignment="Center"
+                                FontFamily="/Assets/Fonts/#iconfont"/>
+                            
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

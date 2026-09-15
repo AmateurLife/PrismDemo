@@ -3,10 +3,10 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <AssemblyName>PrismDemo.B</AssemblyName>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+	<AssemblyVersion>26.8.7.0956</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Prism.DryIoc" Version="8.1.97" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.4" />
     <PackageReference Include="Prism.Wpf" Version="8.1.97" />
   </ItemGroup>
   <ItemGroup>

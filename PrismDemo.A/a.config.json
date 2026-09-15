@@ -1,7 +1,11 @@
 {
   "A": {
-    "SampleUpper": 80.0,
-    "SampleLower": 20.0,
-    "RefreshSeconds": 2
+    "AMax": 300.0,
+    "AMin": 0.0,
+    "UnitRateMax": 300.0,
+    "UnitRateMin": 0.0
+  },
+  "Floc": {
+    "ExePath": "..\\floc\\floc-observer.exe"
   }
 }

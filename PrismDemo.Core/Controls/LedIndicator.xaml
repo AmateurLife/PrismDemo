@@ -1,0 +1,25 @@
+<UserControl x:Class="PrismDemo.Core.Controls.LedIndicator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="50" d:DesignWidth="50"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Background="Transparent">
+    <Viewbox Stretch="Uniform">
+        <Grid Name="layout" Width="50" Height="50">
+            <!-- 外发光光晕 -->
+            <Ellipse Name="glowEllipse" Width="50" Height="50"/>
+
+            <!-- LED 主体 -->
+            <Ellipse Name="ledBody" Width="24" Height="24"/>
+
+            <!-- 高光反射 -->
+            <Ellipse Name="highlight" Width="8" Height="5" 
+                     Margin="-4,-6,0,0"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+    </Viewbox>
+</UserControl>

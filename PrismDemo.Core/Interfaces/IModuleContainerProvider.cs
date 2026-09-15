@@ -1,7 +1,14 @@
+﻿using Prism.Ioc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
 namespace PrismDemo.Core.Interfaces
 {
     public interface IModuleContainerProvider
     {
-        Prism.Ioc.IContainerExtension GetContainer();
+        IContainerExtension GetContainer();
     }
 }

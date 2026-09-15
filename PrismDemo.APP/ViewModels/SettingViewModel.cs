@@ -2,7 +2,9 @@ using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Regions;
 using PrismDemo.APP.Services;
+using PrismDemo.Core.Configuration;
 using PrismDemo.Core.Interfaces;
+using PrismDemo.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,13 +14,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using static PrismDemo.Core.Services.AlertLogger;
 
 namespace PrismDemo.APP.ViewModels
 {
-    /// <summary>
-    /// 设置页（模块管理 + 关于 + 整系统重载）。
-    /// 对应真实工程的 SettingViewModel，砍掉数据库备份/连接配置等业务段。
-    /// </summary>
     public class SettingViewModel : BindableBase, INavigationAware
     {
         private readonly IRegionManager _regionManager;
@@ -26,14 +26,12 @@ namespace PrismDemo.APP.ViewModels
         private readonly DynamicModuleManager _dynamicModuleManager;
         private readonly IModuleDeploymentService _deploymentService;
         private readonly AppReloadService _appReloadService;
+        private readonly IDatabaseService _databaseService;
 
         public DelegateCommand BrowseCommand { get; }
-        public DelegateCommand ScanModulesCommand { get; }
-        public DelegateCommand<AvailableModuleInfo> DeployModuleCommand { get; }
-        public DelegateCommand<ModuleInfo> ReloadModuleCommand { get; }
         public DelegateCommand ReloadSystemCommand { get; }
-        public DelegateCommand ChangeHomePageCmd { get; }
-        public DelegateCommand<string> NavigateToSectionCommand { get; }
+        public DelegateCommand BackupDatabaseCommand { get; }
+        public DelegateCommand BrowseBackupPathCommand { get; }
 
         private string _moduleSourcePath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Modules"));
         public string ModuleSourcePath
@@ -41,9 +39,12 @@ namespace PrismDemo.APP.ViewModels
             get => _moduleSourcePath;
             set => SetProperty(ref _moduleSourcePath, value);
         }
-
         public ObservableCollection<AvailableModuleInfo> DiscoveredModules { get; } = new();
-        public ObservableCollection<ModuleInfo> AvailableModules { get; } = new();
+
+        public DelegateCommand ScanModulesCommand { get; }
+        public DelegateCommand<AvailableModuleInfo> DeployModuleCommand { get; }
+        public DelegateCommand<ModuleInfo> ReloadModuleCommand { get; }
+        private UserControl? _view;
 
         private string _reloadStatus;
         public string ReloadStatus
@@ -66,31 +67,6 @@ namespace PrismDemo.APP.ViewModels
             set => SetProperty(ref _isReloading, value);
         }
 
-        public SettingViewModel(
-            IRegionManager regionManager,
-            IModuleSwitch moduleSwitch,
-            IModuleDeploymentService deploymentService,
-            DynamicModuleManager dynamicModuleManager,
-            AppReloadService appReloadService)
-        {
-            _regionManager = regionManager;
-            _moduleSwitch = moduleSwitch;
-            _deploymentService = deploymentService;
-            _dynamicModuleManager = dynamicModuleManager;
-            _appReloadService = appReloadService;
-
-            ScanModulesCommand = new DelegateCommand(async () => await ScanForNewModulesAsync());
-            DeployModuleCommand = new DelegateCommand<AvailableModuleInfo>(async (m) => await DeployModuleAsync(m));
-            ReloadModuleCommand = new DelegateCommand<ModuleInfo>(async (m) => await ReloadModuleAsync(m));
-            ReloadSystemCommand = new DelegateCommand(async () => await ReloadSystemAsync());
-            BrowseCommand = new DelegateCommand(OnBrowse);
-            ChangeHomePageCmd = new DelegateCommand(() => _regionManager.RequestNavigate("ContentRegion", nameof(Views.HomePage)));
-            NavigateToSectionCommand = new DelegateCommand<string>(ScrollToSection);
-
-            BuildTime = GetBuildTime();
-            InitializeAvailableModules();
-        }
-
         private string _buildTime;
         public string BuildTime
         {
@@ -98,12 +74,107 @@ namespace PrismDemo.APP.ViewModels
             set => SetProperty(ref _buildTime, value);
         }
 
+        private string _backupPath = "";
+        public string BackupPath
+        {
+            get => _backupPath;
+            set => SetProperty(ref _backupPath, value);
+        }
+
+        private string _filenameFormat = "{数据库名称}_{时间戳}.bak";
+        public string FilenameFormat
+        {
+            get => _filenameFormat;
+            set => SetProperty(ref _filenameFormat, value);
+        }
+
+        private int _retentionDays = 7;
+        public int RetentionDays
+        {
+            get => _retentionDays;
+            set => SetProperty(ref _retentionDays, value);
+        }
+
+        private bool _enableCompression = false;
+        public bool EnableCompression
+        {
+            get => _enableCompression;
+            set => SetProperty(ref _enableCompression, value);
+        }
+
+        private bool _enableVerification = true;
+        public bool EnableVerification
+        {
+            get => _enableVerification;
+            set => SetProperty(ref _enableVerification, value);
+        }
+
+        private string _backupStatus = "";
+        public string BackupStatus
+        {
+            get => _backupStatus;
+            set => SetProperty(ref _backupStatus, value);
+        }
+
+        private bool _isBackingUp = false;
+        public bool IsBackingUp
+        {
+            get => _isBackingUp;
+            set => SetProperty(ref _isBackingUp, value);
+        }
+
+        public void SetView(UserControl view) => _view = view;
+
+        public ObservableCollection<ModuleInfo> AvailableModules { get; } = new();
+
+        public DelegateCommand<string> NavigateToSectionCommand { get; }
+        public DelegateCommand ChangeHomePageCmd { get; }
+        public DelegateCommand ChangeSettingConnectCmd { get; }
+        public DelegateCommand ChangeSettingAlarmCmd { get; }
+
+        public SettingViewModel(
+            IRegionManager regionManager,
+            IModuleSwitch moduleSwitch,
+            IModuleDeploymentService deploymentService,
+            DynamicModuleManager dynamicModuleManager,
+            AppReloadService appReloadService,
+            IDatabaseService databaseService)
+        {
+            _regionManager = regionManager;
+            _moduleSwitch = moduleSwitch;
+            _deploymentService = deploymentService;
+            _dynamicModuleManager = dynamicModuleManager;
+            _appReloadService = appReloadService;
+            _databaseService = databaseService;
+
+            NavigateToSectionCommand = new DelegateCommand<string>(ScrollToSection);
+            BrowseCommand = new DelegateCommand(OnBrowseCommand);
+            ReloadSystemCommand = new DelegateCommand(async () => await ReloadSystemAsync());
+            BackupDatabaseCommand = new DelegateCommand(async () => await ExecuteBackupAsync());
+            BrowseBackupPathCommand = new DelegateCommand(OnBrowseBackupPath);
+            ChangeHomePageCmd = new DelegateCommand(() =>
+                _regionManager.RequestNavigate("ContentRegion", "HomePage"));
+            ChangeSettingConnectCmd = new DelegateCommand(() =>
+                _regionManager.RequestNavigate("ContentRegion", "SettingConnect"));
+            ChangeSettingAlarmCmd = new DelegateCommand(() =>
+                _regionManager.RequestNavigate("ContentRegion", "SettingAlarm"));
+
+            ScanModulesCommand = new DelegateCommand(async () => await ScanForNewModulesAsync());
+            DeployModuleCommand = new DelegateCommand<AvailableModuleInfo>(async (module) => await DeployModuleAsync(module));
+            ReloadModuleCommand = new DelegateCommand<ModuleInfo>(async (module) => await ReloadModuleAsync(module));
+
+            BuildTime = GetBuildTime();
+            InitializeAvailableModules();
+            InitializeBackupSettings();
+        }
+
         private static string GetBuildTime()
         {
             try
             {
-                return File.GetLastWriteTime(System.Reflection.Assembly.GetExecutingAssembly().Location)
-                    .ToString("yyyy-MM-dd HH:mm:ss");
+                var assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                var fileInfo = System.IO.File.GetLastWriteTime(assemblyPath);
+                return fileInfo.ToString("yyyy-MM-dd HH:mm:ss");
             }
             catch
             {
@@ -111,8 +182,9 @@ namespace PrismDemo.APP.ViewModels
             }
         }
 
-        private void OnBrowse()
+        private void OnBrowseCommand()
         {
+            // 使用 WinForms FolderBrowserDialog（.NET 8 WPF 支持）
             using var dialog = new System.Windows.Forms.FolderBrowserDialog
             {
                 SelectedPath = ModuleSourcePath,
@@ -128,13 +200,21 @@ namespace PrismDemo.APP.ViewModels
         private async Task ScanForNewModulesAsync()
         {
             DiscoveredModules.Clear();
+
+            Debug.WriteLine($"[Scan] 扫描路径: {ModuleSourcePath}");
             var modules = await _deploymentService.GetAvailableModulesAsync(ModuleSourcePath);
+
             Debug.WriteLine($"[Scan] 找到 {modules.Count} 个可部署模块");
+            foreach (var m in modules)
+            {
+                Debug.WriteLine($"  - {m.ModuleName} @ {m.SourcePath}");
+            }
+
             foreach (var m in modules)
                 DiscoveredModules.Add(m);
         }
 
-        private async Task DeployModuleAsync(AvailableModuleInfo module)
+        private async Task DeployModuleAsync(AvailableModuleInfo? module)
         {
             if (module == null) return;
 
@@ -152,11 +232,11 @@ namespace PrismDemo.APP.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"部署失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowMessageBox($"部署失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async Task ReloadModuleAsync(ModuleInfo module)
+        private async Task ReloadModuleAsync(ModuleInfo? module)
         {
             if (module == null) return;
 
@@ -165,17 +245,20 @@ namespace PrismDemo.APP.ViewModels
                 ReloadStatus = $"正在热重载 {module.Name}...";
                 Debug.WriteLine($"[Reload] 开始热重载模块 {module.Name}");
 
-                if (!File.Exists(module.DllPath))
+                var dllPath = module.DllPath;
+                if (!File.Exists(dllPath))
                 {
-                    MessageBox.Show($"模块文件不存在: {module.DllPath}\n请确保模块已编译并部署到 modules/ 目录",
+                    ShowMessageBox($"模块文件不存在: {dllPath}\n请确保模块已编译并部署到 modules/ 目录",
                         "热重载失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                     ReloadStatus = "热重载失败: 文件不存在";
                     return;
                 }
 
-                await _dynamicModuleManager.ReloadModuleAsync(module.Name, module.DllPath);
+                await _dynamicModuleManager.ReloadModuleAsync(module.Name, dllPath);
 
                 ReloadStatus = $"✅ {module.Name} 热重载成功 ({module.AssemblyVersion})";
+                Debug.WriteLine($"[Reload] 模块 {module.Name} 热重载完成");
+
                 InitializeAvailableModules();
 
                 await Task.Delay(3000);
@@ -184,7 +267,8 @@ namespace PrismDemo.APP.ViewModels
             catch (Exception ex)
             {
                 ReloadStatus = $"热重载失败: {ex.Message}";
-                MessageBox.Show($"热重载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Debug.WriteLine($"[Reload] 热重载异常: {ex}");
+                ShowMessageBox($"热重载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -192,8 +276,9 @@ namespace PrismDemo.APP.ViewModels
         {
             if (IsReloading) return;
 
-            var result = MessageBox.Show("确定要重新加载系统吗？", "重新加载系统",
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = ShowMessageBox(
+                "确定要重新加载系统吗？",
+                "重新加载系统", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes) return;
 
             IsReloading = true;
@@ -206,13 +291,13 @@ namespace PrismDemo.APP.ViewModels
                 SystemReloadStatus = errors.Count > 0
                     ? $"重新加载完成，但存在 {errors.Count} 项异常，请查看日志"
                     : "✅ 重新加载完成";
-
                 InitializeAvailableModules();
             }
             catch (Exception ex)
             {
                 SystemReloadStatus = $"重新加载失败: {ex.Message}";
-                MessageBox.Show($"重新加载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Debug.WriteLine($"[Reload] 系统重新加载异常: {ex}");
+                ShowMessageBox($"重新加载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -222,14 +307,6 @@ namespace PrismDemo.APP.ViewModels
             }
         }
 
-        private void ScrollToSection(string sectionName)
-        {
-            // 保持简单：demo 不使用大型滚动区域
-        }
-
-        /// <summary>
-        /// 扫描 modules 目录，为每个模块保留最新版本，生成 ModuleInfo 列表。
-        /// </summary>
         private void InitializeAvailableModules()
         {
             AvailableModules.Clear();
@@ -239,24 +316,32 @@ namespace PrismDemo.APP.ViewModels
 
             var latestModules = new Dictionary<string, (string FullPath, DateTime Timestamp)>();
 
+            // 第一步：扫描所有 PrismDemo.*.dll，解析模块名和时间戳
             foreach (var dll in Directory.GetFiles(modulesDir, "PrismDemo.*.dll"))
             {
-                string fileName = Path.GetFileNameWithoutExtension(dll);
+                string fileName = Path.GetFileNameWithoutExtension(dll); // e.g., "PrismDemo.A.202604071556"
                 var parts = fileName.Split('.');
-                if (parts.Length < 3) continue;
 
+                if (parts.Length < 3) continue; // 至少: PrismDemo + ModuleName + Timestamp
+
+                // 提取模块基础名（去掉 PrismDemo. 前缀，但保留中间点，如 "Report.Advanced"）
+                // 时间戳必须是最后一部分，且为12位数字
                 string lastPart = parts[^1];
                 if (lastPart.Length != 12 || !long.TryParse(lastPart, out _)) continue;
 
-                string moduleName = string.Join(".", parts.Skip(1).Take(parts.Length - 2));
+                string moduleName = string.Join(".", parts.Skip(1).Take(parts.Length - 2)); // 去掉首(PrismDemo)和尾(时间戳)
 
                 if (DateTime.TryParseExact(lastPart, "yyyyMMddHHmm", null, DateTimeStyles.None, out var ts))
                 {
+                    // 保留最新版本
                     if (!latestModules.TryGetValue(moduleName, out var existing) || ts > existing.Timestamp)
+                    {
                         latestModules[moduleName] = (dll, ts);
+                    }
                 }
             }
 
+            // 第二步：只为最新版本创建 ModuleInfo
             foreach (var kvp in latestModules)
             {
                 string moduleName = kvp.Key;
@@ -265,6 +350,7 @@ namespace PrismDemo.APP.ViewModels
                 bool isEnabled = _moduleSwitch.IsModuleEnabled(moduleName);
                 var info = new ModuleInfo(moduleName, dllPath, isEnabled);
 
+                // 防重复触发机制（保持不变）
                 bool isProcessing = false;
                 info.IsEnabledChanged += async (name, enabled) =>
                 {
@@ -272,9 +358,14 @@ namespace PrismDemo.APP.ViewModels
                     try
                     {
                         isProcessing = true;
+                        Debug.WriteLine($"[SettingViewModel] 开始处理模块 {name} 切换，enabled={enabled}");
                         await _moduleSwitch.SetModuleEnabledAsync(name, enabled);
+
+                        // 刷新状态（注意：这里 info 对应的是最新 DLL）
                         info.IsLoaded = _moduleSwitch.IsModuleEnabled(name);
                         info.Status = info.IsLoaded ? "已加载" : "未加载";
+
+                        Debug.WriteLine($"[SettingViewModel] 模块 {name} 处理完成，IsLoaded={info.IsLoaded}");
                     }
                     finally
                     {
@@ -286,8 +377,207 @@ namespace PrismDemo.APP.ViewModels
             }
         }
 
+
+        // ✅ 删除 LoadModuleAsync 和 UnloadModuleAsync 方法
+
+        private void InitializeBackupSettings()
+        {
+            BackupPath = Config.DatabaseBackupPath;
+        }
+
+        private void OnBrowseBackupPath()
+        {
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                SelectedPath = BackupPath,
+                Description = "请选择数据库备份目录"
+            };
+
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                BackupPath = dialog.SelectedPath;
+            }
+        }
+
+        private async Task ExecuteBackupAsync()
+        {
+            if (IsBackingUp) return;
+
+            IsBackingUp = true;
+            BackupStatus = "正在备份...";
+            try
+            {
+                var (success, message, filePath) = await Task.Run(() =>
+                    _databaseService.BackupDatabaseAsync(
+                        BackupPath,
+                        EnableCompression,
+                        EnableVerification,
+                        RetentionDays,
+                        FilenameFormat));
+
+                BackupStatus = message;
+
+                if (success)
+                {
+                    var result = ShowMessageBox($"{message}\n\n是否打开备份文件所在文件夹？", "备份成功", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (result == MessageBoxResult.Yes && !string.IsNullOrEmpty(filePath))
+                    {
+                        var folderPath = Path.GetDirectoryName(filePath);
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = folderPath,
+                            UseShellExecute = true
+                        });
+                    }
+                }
+                else
+                {
+                    ShowMessageBox(message, "备份失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                BackupStatus = $"备份异常: {ex.Message}";
+                ShowMessageBox($"备份异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsBackingUp = false;
+            }
+        }
+
+        private void ScrollToSection(string sectionName)
+        {
+            if (_view == null) return;
+
+            var contentRoot = _view.FindName("ContentRoot") as Panel;
+            var target = contentRoot?.FindName(sectionName) as UIElement;
+            var scroller = _view.FindName("ContentScroller") as ScrollViewer;
+
+            if (target != null && scroller != null)
+            {
+                var transform = target.TransformToVisual(scroller);
+                var position = transform.Transform(new Point(0, 0));
+                scroller.ScrollToVerticalOffset(position.Y);
+            }
+        }
+
         public void OnNavigatedTo(NavigationContext navigationContext) { }
         public bool IsNavigationTarget(NavigationContext navigationContext) => true;
         public void OnNavigatedFrom(NavigationContext navigationContext) { }
     }
+
+
+    // ============================================================
+    // ModuleInfo
+    // ============================================================
+    public class ModuleInfo : BindableBase
+    {
+        private bool _suppressEvent = false;
+        public string Name { get; }
+        public string DllPath { get; }
+
+        public event Action<string, bool>? IsEnabledChanged;
+
+        private bool _isLoaded;
+        public bool IsLoaded
+        {
+            get => _isLoaded;
+            set => SetProperty(ref _isLoaded, value);
+        }
+
+        public string DeployTime { get; }
+
+        private string _assemblyVersion;
+        public string AssemblyVersion
+        {
+            get => _assemblyVersion;
+            set => SetProperty(ref _assemblyVersion, value);
+        }
+
+        private bool? _isEnabled;
+        public bool? IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (_suppressEvent)
+                {
+                    _isEnabled = value;
+                    return;
+                }
+
+                if (SetProperty(ref _isEnabled, value))
+                {
+                    Debug.WriteLine($"[ModuleInfo] {Name} IsEnabled changed to {value}");
+                    IsEnabledChanged?.Invoke(Name, value ?? false);
+                }
+            }
+        }
+
+        private string _status;
+        public string Status
+        {
+            get => _status;
+            set => SetProperty(ref _status, value);
+        }
+
+        public ModuleInfo(string name, string dllPath, bool isEnabled)
+        {
+            Name = name;
+            DllPath = dllPath;
+
+            _suppressEvent = true;
+            _isEnabled = isEnabled;
+            _isLoaded = isEnabled;
+            _status = isEnabled ? "已加载" : "未加载";
+            _suppressEvent = false;
+            DeployTime = ExtractDeployTimeFromPath(dllPath);
+            AssemblyVersion = ReadAssemblyVersion(dllPath);
+
+            RaisePropertyChanged(nameof(IsEnabled));
+            RaisePropertyChanged(nameof(IsLoaded));
+            RaisePropertyChanged(nameof(Status));
+        }
+
+        private static string ExtractDeployTimeFromPath(string dllPath)
+        {
+            try
+            {
+                string fileName = Path.GetFileNameWithoutExtension(dllPath);
+                var parts = fileName.Split('.');
+                if (parts.Length >= 3)
+                {
+                    string lastPart = parts[^1];
+                    if (lastPart.Length == 12 && long.TryParse(lastPart, out _))
+                    {
+                        if (DateTime.TryParseExact(lastPart, "yyyyMMddHHmm", null, DateTimeStyles.None, out var dt))
+                        {
+                            return dt.ToString("yyyy-MM-dd HH:mm");
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return "Unknown";
+        }
+
+        private static string ReadAssemblyVersion(string dllPath)
+        {
+            try
+            {
+                var runtimeAssemblies = Directory.GetFiles(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+                using var mlc = new System.Reflection.MetadataLoadContext(new System.Reflection.PathAssemblyResolver(runtimeAssemblies));
+                var assembly = mlc.LoadFromAssemblyPath(dllPath);
+                return assembly.GetName().Version?.ToString() ?? "Unknown";
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+    }
+
 }

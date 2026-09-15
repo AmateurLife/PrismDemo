@@ -4,10 +4,34 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Prism.Wpf" Version="8.1.97" />
+    <Compile Remove="Bases\**" />
+    <Compile Remove="Events\**" />
+    <Compile Remove="Modules\**" />
+    <Compile Remove="ViewModels\**" />
+    <EmbeddedResource Remove="Bases\**" />
+    <EmbeddedResource Remove="Events\**" />
+    <EmbeddedResource Remove="Modules\**" />
+    <EmbeddedResource Remove="ViewModels\**" />
+    <None Remove="Bases\**" />
+    <None Remove="Events\**" />
+    <None Remove="Modules\**" />
+    <None Remove="ViewModels\**" />
+    <Page Remove="Bases\**" />
+    <Page Remove="Events\**" />
+    <Page Remove="Modules\**" />
+    <Page Remove="ViewModels\**" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="ViewModels\" />
-    <Folder Include="Views\" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Prism.Wpf" Version="8.1.97" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.106" />
+    <PackageReference Include="LiveCharts.Wpf" Version="0.9.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="core.config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
